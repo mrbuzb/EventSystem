@@ -1,4 +1,7 @@
 
+using EventSystem.Server.Configurations;
+using EventSystem.Server.Endpoints;
+
 namespace EventSystem.Server
 {
     public class Program
@@ -14,6 +17,14 @@ namespace EventSystem.Server
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+
+            builder.ConfigureDataBase();
+            builder.ConfigurationJwtAuth();
+            builder.ConfigureJwtSettings();
+            builder.ConfigureSerilog();
+            builder.Services.ConfigureDependecies();
+            
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -22,11 +33,15 @@ namespace EventSystem.Server
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
+            app.MapAdminEndpoints();
+            app.MapAuthEndpoints();
+            app.MapEventEndpoints();
+            app.MapRoleEndpoints();
 
             app.MapControllers();
 
