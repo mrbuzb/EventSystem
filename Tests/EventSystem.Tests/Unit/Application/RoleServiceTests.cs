@@ -67,7 +67,7 @@ public class RoleServiceTests
                 UserId = 1,
                 FirstName = "John",
                 LastName = "Doe",
-                Email = "john@example.com",
+                //Email = "john@example.com",
                 PhoneNumber = "123456789",
                 UserName = "johndoe",
                 Role = new UserRole { Name = "User" }
@@ -77,7 +77,7 @@ public class RoleServiceTests
                 UserId = 2,
                 FirstName = "Jane",
                 LastName = "Smith",
-                Email = "jane@example.com",
+                //Email = "jane@example.com",
                 PhoneNumber = "987654321",
                 UserName = "janesmith",
                 Role = new UserRole { Name = "User" }

@@ -8,7 +8,7 @@ using EventSystem.Core.Errors;
 
 namespace EventSystem.Application.Services;
 
-public class UserService(IUserRepository _userRepository) :IUserService
+public class UserService(IUserRepository _userRepository) : IUserService
 {
     public async Task DeleteUserByIdAsync(long userId, string userRole)
     {

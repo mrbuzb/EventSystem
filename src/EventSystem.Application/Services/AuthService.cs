@@ -1,4 +1,7 @@
-﻿using System.Security.Claims;
+﻿using System.Net;
+using System.Net.Mail;
+using System.Net.WebSockets;
+using System.Security.Claims;
 using EventSystem.Application.Dtos;
 using EventSystem.Application.Helpers;
 using EventSystem.Application.Helpers.Security;
@@ -6,6 +9,8 @@ using EventSystem.Application.Interfaces;
 using EventSystem.Application.Settings;
 using EventSystem.Core.Errors;
 using EventSystem.Domain.Entities;
+using FluentEmail.Core;
+using FluentEmail.Smtp;
 using FluentValidation;
 
 namespace EventSystem.Application.Services;
@@ -16,6 +21,39 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
     IRefreshTokenRepository _refTokRepo) : IAuthService
 {
     private readonly int Expires = int.Parse(_jwtSetting.Lifetime);
+    /*public async Task<long> SignUpUserAsync(UserCreateDto userCreateDto)
+    {
+        var validatorResult = await _validator.ValidateAsync(userCreateDto);
+        if (!validatorResult.IsValid)
+        {
+            string errorMessages = string.Join("; ", validatorResult.Errors.Select(e => e.ErrorMessage));
+            throw new AuthException(errorMessages);
+        }
+
+        var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
+        var confirmer = new UserConfirme()
+        {
+            Gmail = userCreateDto.Email,
+        };
+
+        var user = new User()
+        {
+            FirstName = userCreateDto.FirstName,
+            LastName = userCreateDto.LastName,
+            UserName = userCreateDto.UserName,
+            PhoneNumber = userCreateDto.PhoneNumber,
+            Password = tupleFromHasher.Hash,
+            Salt = tupleFromHasher.Salt,
+        };
+        user.Confirmer = new UserConfirme() { Gmail = userCreateDto.Email, UserId = user.UserId };
+
+        user.RoleId = await _roleRepo.GetRoleIdAsync("User");
+
+        //var code = await EailCodeSender(user.Email);
+        return await _userRepo.AddUserAync(user);
+    //}*/
+
+
     public async Task<long> SignUpUserAsync(UserCreateDto userCreateDto)
     {
         var validatorResult = await _validator.ValidateAsync(userCreateDto);
@@ -26,20 +64,38 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
         }
 
         var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
+
+        var confirmer = new UserConfirme()
+        {
+            Gmail = userCreateDto.Email,
+        };
+
+
         var user = new User()
         {
+            Confirmer = confirmer,
             FirstName = userCreateDto.FirstName,
             LastName = userCreateDto.LastName,
             UserName = userCreateDto.UserName,
-            Email = userCreateDto.Email,
             PhoneNumber = userCreateDto.PhoneNumber,
             Password = tupleFromHasher.Hash,
             Salt = tupleFromHasher.Salt,
+            RoleId = await _roleRepo.GetRoleIdAsync("User")
         };
-        user.RoleId = await _roleRepo.GetRoleIdAsync("User");
 
-        return await _userRepo.AddUserAync(user);
+        long userId = await _userRepo.AddUserAync(user);
+
+        
+
+        var foundUser = await _userRepo.GetUserByIdAync(userId);
+
+        foundUser.Confirmer!.UserId = userId;
+
+        await _userRepo.UpdateUser(foundUser);
+
+        return userId;
     }
+
 
     public async Task<LoginResponseDto> LoginUserAsync(UserLoginDto userLoginDto)
     {
@@ -65,7 +121,7 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
             UserName = user.UserName,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Email = user.Email,
+            Email = user.Confirmer.Gmail,
             PhoneNumber = user.PhoneNumber,
             Role = user.Role.Name,
         };
@@ -120,7 +176,7 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
             UserName = user.UserName,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Email = user.Email,
+            Email = user.Confirmer.Gmail,
             PhoneNumber = user.PhoneNumber,
             Role = user.Role.Name,
         };
@@ -149,4 +205,44 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
 
     public async Task LogOut(string token) => await _refTokRepo.DeleteRefreshToken(token);
 
+    public async Task EailCodeSender(string email)
+    {
+        var user = await _userRepo.GetUserByEmail(email);
+
+        var sender = new SmtpSender(() => new SmtpClient("smtp.gmail.com")
+        {
+            EnableSsl = true,
+            DeliveryMethod = SmtpDeliveryMethod.Network,
+            Port = 587,
+            Credentials = new NetworkCredential("qahmadjon11@gmail.com", "nhksnhhxzdbbnqdw")
+        });
+
+        Email.DefaultSender = sender;
+
+        var code = Random.Shared.Next(100000, 999999).ToString();
+
+        var sendResponse = await Email
+            .From("qahmadjon11@gmail.com")
+            .To(email)
+            .Subject("Your Confirming Code")
+            .Body(code)
+            .SendAsync();
+
+        user.Confirmer!.ConfirmingCode = code;
+        user.Confirmer.ExpiredDate = DateTime.Now.AddMinutes(10);
+        await _userRepo.UpdateUser(user);
+    }
+
+    public async Task<bool> ConfirmCode(string email,string userCode)
+    {
+        var user = await _userRepo.GetUserByEmail(email);
+        var code = user.Confirmer!.ConfirmingCode;
+        if(code == null || code != userCode ||user.Confirmer.ExpiredDate < DateTime.Now || user.Confirmer.IsConfirmed is true)
+        {
+            throw new NotAllowedException("Code is incorrect");
+        }
+        user.Confirmer.IsConfirmed = true;
+         await _userRepo.UpdateUser(user);
+        return true;
+    }
 }

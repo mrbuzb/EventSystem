@@ -26,6 +26,7 @@ namespace EventSystem.Infrastructure.Persistence.Configurations
                    .WithMany(u => u.CreatedEvents)
                    .HasForeignKey(e => e.CreatorId)
                    .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }

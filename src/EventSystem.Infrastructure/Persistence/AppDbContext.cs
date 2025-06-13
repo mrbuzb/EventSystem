@@ -9,7 +9,9 @@ namespace EventSystem.Infrastructure.Persistence
         public DbSet<Event> Events { get; set; }
         public DbSet<EventGuest> EventGuest { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<UserConfirme> Confirmers { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<EventSubscriber> EventSubscribers { get; set; }
 
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)

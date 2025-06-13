@@ -87,7 +87,7 @@ public class AuthServiceTests
             UserName = "johnny",
             FirstName = "John",
             LastName = "Doe",
-            Email = "john@example.com",
+            //Email = "john@example.com",
             PhoneNumber = "123456789",
             Password = hashed.Hash, 
             Salt = hashed.Salt,    
@@ -140,7 +140,7 @@ public class AuthServiceTests
             UserName = "johnny",
             FirstName = "John",
             LastName = "Doe",
-            Email = "john@example.com",
+            //Email = "john@example.com",
             PhoneNumber = "123456789",
             Role = new UserRole { Name = "User" }
         };

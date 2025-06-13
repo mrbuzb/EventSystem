@@ -10,7 +10,6 @@ public static class EventEndpoints
     public static void MapEventEndpoints(this WebApplication app)
     {
         var userGroup = app.MapGroup("/api/event")
-            .RequireAuthorization()
             .WithTags("Event System");
 
         userGroup.MapPost("/add-event", [Authorize]
@@ -76,6 +75,53 @@ public static class EventEndpoints
             return Results.Ok(res);
         })
             .WithName("GetAllEvents");
+
+        userGroup.MapGet("/get-all-public-events",
+        async (IEventService _service) =>
+        {
+            var res = await _service.GetAllPublicEvents();
+            return Results.Ok(res);
+        })
+            .WithName("GetAllPublicEvents");
+
+        userGroup.MapGet("/get-all-guested-events", [Authorize]
+        async (HttpContext context, IEventService _service) =>
+        {
+            var userId = context.User.FindFirst("UserId")?.Value;
+            if (userId is null)
+            {
+                throw new ForbiddenException();
+            }
+            var res = await _service.GetAllGuestedEvents(long.Parse(userId));
+            return Results.Ok(res);
+        })
+            .WithName("GetAllGuestedEvents");
+
+        userGroup.MapPost("/subscribe-event", [Authorize]
+        async (long eventId,HttpContext context, IEventService _service) =>
+        {
+            var userId = context.User.FindFirst("UserId")?.Value;
+            if (userId is null)
+            {
+                throw new ForbiddenException();
+            }
+            var res = await _service.SubscribeEvent(eventId,long.Parse(userId));
+            return Results.Ok(res);
+        })
+            .WithName("SubscribeEvent");
+
+        userGroup.MapDelete("/unsubscribe-event", [Authorize]
+        async (long eventId,HttpContext context, IEventService _service) =>
+        {
+            var userId = context.User.FindFirst("UserId")?.Value;
+            if (userId is null)
+            {
+                throw new ForbiddenException();
+            }
+            var res = await _service.UnSubscribeEvent(eventId,long.Parse(userId));
+            return Results.Ok(res);
+        })
+            .WithName("UnSubscribeEvent");
 
     }
 }

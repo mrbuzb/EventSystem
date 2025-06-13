@@ -14,4 +14,5 @@ public class EventCreateDto
     public string Location { get; set; }
     public string Description { get; set; }
     public int Capasity { get; set; }
+    public ICollection<GuestUserDto> GuestUsers { get; set; }
 }

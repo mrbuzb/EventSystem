@@ -15,9 +15,11 @@ public class Event
     public string Location { get; set; }
     public string Description { get; set; }
     public int Capasity { get; set; }
+    public int Subscribers { get; set; }
 
     public long CreatorId { get; set; }      
     public User Creator { get; set; }
 
+    public ICollection<EventSubscriber> SubscribedUsers { get; set; }
     public ICollection<EventGuest> Guests { get; set; }
 }

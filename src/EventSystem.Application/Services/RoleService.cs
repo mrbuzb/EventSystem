@@ -35,7 +35,7 @@ public class RoleService(IRoleRepository _roleRepo) : IRoleService
     {
         return new UserGetDto
         {
-            Email = user.Email,
+            Email = user.Confirmer.Gmail,
             FirstName = user.FirstName,
             LastName = user.LastName,
             PhoneNumber = user.PhoneNumber,

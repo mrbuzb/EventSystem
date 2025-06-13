@@ -1,5 +1,8 @@
-﻿using EventSystem.Application.Dtos;
+﻿using System.Security.Claims;
+using EventSystem.Application.Dtos;
 using EventSystem.Application.Services;
+using EventSystem.Core.Errors;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EventSystem.Server.Endpoints;
 
@@ -9,6 +12,25 @@ public static class AuthEndpoints
     {
         var userGroup = app.MapGroup("/api/auth")
             .WithTags("Authentication");
+
+        userGroup.MapPost("/send-code", [Authorize]
+            async (string email,IAuthService _service) =>
+            {
+                await _service.EailCodeSender(email);
+            })
+            .WithName("SendCode");
+
+        userGroup.MapPost("/confirm-code", [Authorize]
+            async (string code,HttpContext _context,IAuthService _service) =>
+            {
+                var userId = _context.User.FindFirst("UserId")?.Value;
+                if(userId == null)
+                {
+                    throw new UnauthorizedException();
+                }
+                await _service.ConfirmCode(code,int.Parse(userId));
+            })
+            .WithName("ConfirmCode");
 
         userGroup.MapPost("/sign-up",
         async (UserCreateDto user, IAuthService _service) =>

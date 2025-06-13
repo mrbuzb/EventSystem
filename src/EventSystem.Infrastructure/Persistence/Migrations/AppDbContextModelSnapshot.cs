@@ -4,19 +4,16 @@ using EventSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace EventSystem.Infrastructure.Migrations
+namespace EventSystem.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250530092712_InitialCreation")]
-    partial class InitialCreation
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,6 +49,9 @@ namespace EventSystem.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int>("Subscribers")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -80,6 +80,26 @@ namespace EventSystem.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("EventGuests", (string)null);
+                });
+
+            modelBuilder.Entity("EventSystem.Domain.Entities.EventSubscriber", b =>
+                {
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("SubscribedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.HasKey("EventId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EventSubscribers", (string)null);
                 });
 
             modelBuilder.Entity("EventSystem.Domain.Entities.RefreshToken", b =>
@@ -118,10 +138,8 @@ namespace EventSystem.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("UserId"));
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    b.Property<long?>("ConfirmerId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -156,9 +174,51 @@ namespace EventSystem.Infrastructure.Migrations
 
                     b.HasKey("UserId");
 
+                    b.HasIndex("ConfirmerId")
+                        .IsUnique()
+                        .HasFilter("[ConfirmerId] IS NOT NULL");
+
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("EventSystem.Domain.Entities.UserConfirme", b =>
+                {
+                    b.Property<long>("ConfirmerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ConfirmerId"));
+
+                    b.Property<string>("ConfirmingCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
+                    b.Property<DateTime>("ExpiredDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("DATEADD(MINUTE, 10, GETDATE())");
+
+                    b.Property<string>("Gmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsConfirmed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("ConfirmerId");
+
+                    b.HasIndex("Gmail")
+                        .IsUnique()
+                        .HasFilter("[IsConfirmed] = 1");
+
+                    b.ToTable("Confirmers", (string)null);
                 });
 
             modelBuilder.Entity("EventSystem.Domain.Entities.UserRole", b =>
@@ -214,6 +274,25 @@ namespace EventSystem.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EventSystem.Domain.Entities.EventSubscriber", b =>
+                {
+                    b.HasOne("EventSystem.Domain.Entities.Event", "Event")
+                        .WithMany("SubscribedUsers")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EventSystem.Domain.Entities.User", "User")
+                        .WithMany("SubscribedEvents")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EventSystem.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("EventSystem.Domain.Entities.User", "User")
@@ -227,11 +306,18 @@ namespace EventSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("EventSystem.Domain.Entities.User", b =>
                 {
+                    b.HasOne("EventSystem.Domain.Entities.UserConfirme", "Confirmer")
+                        .WithOne("User")
+                        .HasForeignKey("EventSystem.Domain.Entities.User", "ConfirmerId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("EventSystem.Domain.Entities.UserRole", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Confirmer");
 
                     b.Navigation("Role");
                 });
@@ -239,6 +325,8 @@ namespace EventSystem.Infrastructure.Migrations
             modelBuilder.Entity("EventSystem.Domain.Entities.Event", b =>
                 {
                     b.Navigation("Guests");
+
+                    b.Navigation("SubscribedUsers");
                 });
 
             modelBuilder.Entity("EventSystem.Domain.Entities.User", b =>
@@ -248,6 +336,14 @@ namespace EventSystem.Infrastructure.Migrations
                     b.Navigation("GuestEvents");
 
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("SubscribedEvents");
+                });
+
+            modelBuilder.Entity("EventSystem.Domain.Entities.UserConfirme", b =>
+                {
+                    b.Navigation("User")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EventSystem.Domain.Entities.UserRole", b =>
