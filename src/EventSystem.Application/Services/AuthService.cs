@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Mail;
 using System.Net.WebSockets;
+using System.Runtime;
 using System.Security.Claims;
 using EventSystem.Application.Dtos;
 using EventSystem.Application.Helpers;
@@ -63,37 +64,70 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
             throw new AuthException(errorMessages);
         }
 
-        var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
-
-        var confirmer = new UserConfirme()
+        User isEmailExists;
+        try
         {
-            Gmail = userCreateDto.Email,
-        };
-
-
-        var user = new User()
+            isEmailExists = await _userRepo.GetUserByEmail(userCreateDto.Email);
+        }
+        catch (Exception ex)
         {
-            Confirmer = confirmer,
-            FirstName = userCreateDto.FirstName,
-            LastName = userCreateDto.LastName,
-            UserName = userCreateDto.UserName,
-            PhoneNumber = userCreateDto.PhoneNumber,
-            Password = tupleFromHasher.Hash,
-            Salt = tupleFromHasher.Salt,
-            RoleId = await _roleRepo.GetRoleIdAsync("User")
-        };
+            isEmailExists = null;
+        }
 
-        long userId = await _userRepo.AddUserAync(user);
+        if (isEmailExists == null)
+        {
 
-        
+            var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
 
-        var foundUser = await _userRepo.GetUserByIdAync(userId);
+            var confirmer = new UserConfirme()
+            {
+                IsConfirmed = false,
+                Gmail = userCreateDto.Email,
+            };
 
-        foundUser.Confirmer!.UserId = userId;
 
-        await _userRepo.UpdateUser(foundUser);
+            var user = new User()
+            {
+                Confirmer = confirmer,
+                FirstName = userCreateDto.FirstName,
+                LastName = userCreateDto.LastName,
+                UserName = userCreateDto.UserName,
+                PhoneNumber = userCreateDto.PhoneNumber,
+                Password = tupleFromHasher.Hash,
+                Salt = tupleFromHasher.Salt,
+                RoleId = await _roleRepo.GetRoleIdAsync("User")
+            };
 
-        return userId;
+            long userId = await _userRepo.AddUserAync(user);
+
+
+
+            var foundUser = await _userRepo.GetUserByIdAync(userId);
+
+            foundUser.Confirmer!.UserId = userId;
+
+            await _userRepo.UpdateUser(foundUser);
+
+            return userId;
+        }
+        else if(isEmailExists.Confirmer!.IsConfirmed is false)
+        {
+
+            var tupleFromHasher = PasswordHasher.Hasher(userCreateDto.Password);
+
+            isEmailExists.FirstName = userCreateDto.FirstName;
+            isEmailExists.LastName = userCreateDto.LastName;
+            isEmailExists.UserName = userCreateDto.UserName;
+            isEmailExists.PhoneNumber = userCreateDto.PhoneNumber;
+            isEmailExists.Password = tupleFromHasher.Hash;
+            isEmailExists.Salt = tupleFromHasher.Salt;
+            isEmailExists.RoleId = await _roleRepo.GetRoleIdAsync("User");
+
+            await _userRepo.UpdateUser(isEmailExists);
+            return isEmailExists.UserId;
+        }
+
+        throw new NotAllowedException("This email already confirmed");
     }
 
 
@@ -113,6 +147,10 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
         if (checkUserPassword == false)
         {
             throw new UnauthorizedException("UserName or password incorrect");
+        }
+        if (user.Confirmer.IsConfirmed == false)
+        {
+            throw new UnauthorizedException("Email not confirmed");
         }
 
         var userGetDto = new UserGetDto()
@@ -233,7 +271,7 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
         await _userRepo.UpdateUser(user);
     }
 
-    public async Task<bool> ConfirmCode(string email,string userCode)
+    public async Task<bool> ConfirmCode(string userCode,string email)
     {
         var user = await _userRepo.GetUserByEmail(email);
         var code = user.Confirmer!.ConfirmingCode;

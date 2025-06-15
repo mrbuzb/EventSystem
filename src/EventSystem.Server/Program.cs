@@ -31,21 +31,29 @@ namespace EventSystem.Server
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowLocalhost5173", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
 
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                    c.RoutePrefix = "swagger"; // <-- faqat /swagger'da ochiladi
-                });
-            }
+            //if (app.Environment.IsDevelopment())
+            //{
+            //    app.UseSwagger();
+            //    app.UseSwaggerUI(c =>
+            //    {
+            //        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+            //        c.RoutePrefix = "swagger"; // <-- faqat /swagger'da ochiladi
+            //    });
+            //}
 
 
             if (app.Environment.IsDevelopment())
@@ -54,6 +62,7 @@ namespace EventSystem.Server
                 app.UseSwaggerUI();
             }
             app.UseHttpsRedirection();
+            app.UseCors("AllowLocalhost5173");
             app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseAuthentication();
             app.UseAuthorization();
@@ -67,6 +76,10 @@ namespace EventSystem.Server
             app.MapRoleEndpoints();
 
             app.MapControllers();
+
+            //app.UseStaticFiles(); 
+
+            //app.MapFallbackToFile("index.html");
 
             app.Run();
         }

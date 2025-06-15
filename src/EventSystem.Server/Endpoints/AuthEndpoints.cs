@@ -13,22 +13,18 @@ public static class AuthEndpoints
         var userGroup = app.MapGroup("/api/auth")
             .WithTags("Authentication");
 
-        userGroup.MapPost("/send-code", [Authorize]
+        userGroup.MapPost("/send-code",
             async (string email,IAuthService _service) =>
             {
                 await _service.EailCodeSender(email);
             })
             .WithName("SendCode");
 
-        userGroup.MapPost("/confirm-code", [Authorize]
-            async (string code,HttpContext _context,IAuthService _service) =>
+        userGroup.MapPost("/confirm-code",
+            async (string code,string email,IAuthService _service) =>
             {
-                var userId = _context.User.FindFirst("UserId")?.Value;
-                if(userId == null)
-                {
-                    throw new UnauthorizedException();
-                }
-                await _service.ConfirmCode(code,int.Parse(userId));
+                var res = await _service.ConfirmCode(code,email);
+                return Results.Ok(res);
             })
             .WithName("ConfirmCode");
 

@@ -8,9 +8,9 @@ public static class SelilogConfiguration
     {
         var config = builder.Configuration;
 
-        Log.Logger = new LoggerConfiguration()
+        /*Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(config)
-            .CreateLogger();
+            .CreateLogger();*/
 
         builder.Logging.AddSerilog();
     }
