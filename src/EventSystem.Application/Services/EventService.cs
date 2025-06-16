@@ -7,6 +7,7 @@ using EventSystem.Domain.Entities;
 using FluentEmail.Core;
 using FluentEmail.Smtp;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace EventSystem.Application.Services;
 
@@ -63,7 +64,7 @@ public class EventService(IUserRepository _userRepo ,IEventRepository _eventRepo
             foreach (var email in eventCreateDto.GuestUsers)
             {
                 var foundUserId = await _userRepo.CheckEmailExistsAsync(email.Email);
-                if (foundUserId is not null)
+                if (foundUserId is not null&&user.Confirmer.Gmail != email.Email)
                 {
                     existEmails.Add(email.Email);
                     foundEvent.Guests.Add(new EventGuest() { EventId = eventId,UserId = foundUserId.Value});
@@ -103,7 +104,11 @@ public class EventService(IUserRepository _userRepo ,IEventRepository _eventRepo
 
     public async Task<EventGetDto> GetEventByIdAsync(long eventId, long userId)
     {
-        return Converter(await _eventRepo.GetEventByIdAsync(eventId, userId));
+        var eventById = await _eventRepo.GetEventByIdAsync(eventId, userId);
+        var result =  Converter(eventById);
+        result.IsSubscribed = eventById.SubscribedUsers.Any(u=>u.UserId == userId);
+        result.CreatedBy = eventById.Creator.UserName;
+        return result;
     }
 
     public async Task UpdateEventAsync(EventUpdateDto eventUpdateDto, long userId)

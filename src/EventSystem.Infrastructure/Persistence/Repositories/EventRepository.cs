@@ -35,11 +35,12 @@ public class EventRepository(AppDbContext _context) : IEventRepository
 
     public async Task<Event> GetEventByIdAsync(long eventId, long userId)
     {
-        var eventEntity = await _context.Events.Include(x => x.Guests).FirstOrDefaultAsync(x => x.Id == eventId);
+        var eventEntity = await _context.Events.Include(x => x.Guests).Include(_=>_.SubscribedUsers).Include(c=>c.Creator).FirstOrDefaultAsync(x => x.Id == eventId);
         if (eventEntity is null || eventEntity.CreatorId != userId && eventEntity.Type == Domain.Entities.Type.Private)
         {
             throw new ForbiddenException("User id not allowed or entity not found");
         }
+
         return eventEntity;
     }
 
