@@ -38,6 +38,7 @@ public class EventService(IUserRepository _userRepo ,IEventRepository _eventRepo
             Id = eventEntity.Id,
             CreatorId = eventEntity.CreatorId,
             Capasity = eventEntity.Capasity,
+            SubscribersCount = eventEntity.Subscribers,
             Type = (TypeDto)eventEntity.Type,
         };
     }
@@ -158,5 +159,13 @@ public class EventService(IUserRepository _userRepo ,IEventRepository _eventRepo
             .Subject("Notification")
             .Body($"User {inviter} invite you his event")
             .SendAsync();
+    }
+
+    public async Task<List<EventGetDto>> GetAllSubscribedEvents(long userId)
+    {
+        var events =await _eventRepo.GetAllSubscribedEvents(userId);
+
+        var eventsDtos = events.Select(x=> Converter(x.Event)).ToList();
+        return eventsDtos;
     }
 }

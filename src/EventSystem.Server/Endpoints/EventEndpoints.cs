@@ -76,6 +76,19 @@ public static class EventEndpoints
         })
             .WithName("GetAllEvents");
 
+        userGroup.MapGet("/get-all-subscribed-events", [Authorize]
+        async (HttpContext context, IEventService _service) =>
+        {
+            var userId = context.User.FindFirst("UserId")?.Value;
+            if (userId is null)
+            {
+                throw new ForbiddenException();
+            }
+            var res = await _service.GetAllSubscribedEvents(long.Parse(userId));
+            return Results.Ok(res);
+        })
+            .WithName("GetAllSubscribedEvents");
+
         userGroup.MapGet("/get-all-public-events",
         async (IEventService _service) =>
         {

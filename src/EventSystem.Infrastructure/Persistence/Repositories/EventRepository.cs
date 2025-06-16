@@ -33,6 +33,16 @@ public class EventRepository(AppDbContext _context) : IEventRepository
         return await _context.Events.Where(x=>x.Type == Domain.Entities.Type.Public).ToListAsync();
     }
 
+    public async Task<List<EventSubscriber>> GetAllSubscribedEvents(long userId)
+    {
+        var user =await _context.Users.Include(x=>x.SubscribedEvents).ThenInclude(_=>_.Event).FirstOrDefaultAsync(x=>x.UserId == userId);
+        if(user == null)
+        {
+            throw new NotAllowedException($"User with id {userId} not found");
+        }
+        return user.SubscribedEvents.ToList();
+    }
+
     public async Task<Event> GetEventByIdAsync(long eventId, long userId)
     {
         var eventEntity = await _context.Events.Include(x => x.Guests).Include(_=>_.SubscribedUsers).Include(c=>c.Creator).FirstOrDefaultAsync(x => x.Id == eventId);

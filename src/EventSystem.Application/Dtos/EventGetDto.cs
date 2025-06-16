@@ -10,6 +10,7 @@ public class EventGetDto
     public string Location { get; set; }
     public string Description { get; set; }
     public int Capasity { get; set; }
+    public int SubscribersCount { get; set; }
     public long CreatorId { get; set; }
     public bool IsSubscribed { get; set; }
 }

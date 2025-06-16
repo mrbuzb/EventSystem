@@ -10,6 +10,7 @@ public interface IEventService
     Task<int> UnSubscribeEvent(long eventId,long userId);
     Task<EventGetDto> GetEventByIdAsync(long eventId, long userId);
     Task<List<EventGetDto>> GetAllEvents( long userId);
+    Task<List<EventGetDto>> GetAllSubscribedEvents( long userId);
     Task UpdateEventAsync(EventUpdateDto updatedEvent,long userId);
     Task DeleteEventAsync(long eventId, long userId);
     Task<List<EventGetDto>> GetAllPublicEvents();
