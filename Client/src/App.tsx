@@ -12,8 +12,8 @@ import { MyEvents } from './pages/MyEvents';
 import { GuestEvents } from './pages/GuestEvents';
 import { EventDetail } from './pages/EventDetail';
 import { AdminUsers } from './pages/AdminUsers';
-import { CreateEvent } from './pages/CreateEvent';        // ✅ Create event sahifasi
-import { SubscribedEvents } from './pages/SubscribedEvents';  // ✅ Subscribed events sahifasi
+import { CreateEvent } from './pages/CreateEvent';        
+import { SubscribedEvents } from './pages/SubscribedEvents';  
 
 function App() {
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Role } from '../types/api';
 import { apiService } from '../services/api';
-import { Shield, Users, Trash2, Edit, Search, Loader } from 'lucide-react';
+import { Shield, Users, Trash2, Search, Loader } from 'lucide-react';
 
 export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -15,6 +15,10 @@ export const AdminUsers: React.FC = () => {
     loadData();
   }, [selectedRole]);
 
+  useEffect(() => {
+    console.log('Users:', users);
+  }, [users]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -25,18 +29,23 @@ export const AdminUsers: React.FC = () => {
       setUsers(usersData);
       setRoles(rolesData);
     } catch (err: any) {
-      setError('Failed to load user data. Please try again.');
       console.error('Error loading data:', err);
+      setError('Failed to load user data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId?: number) => {
+    if (!userId) {
+      console.error("User ID is undefined for delete");
+      return;
+    }
+
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await apiService.deleteUser(userId);
-        await loadData(); // Refresh the list
+        await loadData();
       } catch (err: any) {
         console.error('Error deleting user:', err);
         setError('Failed to delete user. Please try again.');
@@ -44,17 +53,29 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleUpdateRole = async (userId: number, newRole: string) => {
+  const handleUpdateRole = async (userId: string | number, newRole: string) => {
+    console.log(userId);
+    const parsedUserId =
+      typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
+    console.log('Parsed User ID:', parsedUserId, 'New Role:', newRole);
+
+    if (isNaN(parsedUserId) || !newRole) {
+      console.error("Invalid user ID or role for update");
+      setError("Invalid user ID or role.");
+      return;
+    }
+
     try {
-      await apiService.updateUserRole(userId, newRole);
-      await loadData(); // Refresh the list
+      await apiService.updateUserRole(parsedUserId, newRole);
+      await loadData();
     } catch (err: any) {
       console.error('Error updating user role:', err);
       setError('Failed to update user role. Please try again.');
     }
   };
 
-  const filteredUsers = users.filter(user =>
+  const filteredUsers = users.filter((user) =>
     user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,7 +121,7 @@ export const AdminUsers: React.FC = () => {
             className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
-        
+
         <div className="sm:w-48">
           <select
             value={selectedRole}
@@ -108,7 +129,7 @@ export const AdminUsers: React.FC = () => {
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
             {roles.map((role) => (
-              <option key={role.id} value={role.name}>
+              <option key={role.id || role.name} value={role.name}>
                 {role.name}s
               </option>
             ))}
@@ -129,13 +150,14 @@ export const AdminUsers: React.FC = () => {
           <div className="bg-white shadow overflow-hidden sm:rounded-md">
             <ul className="divide-y divide-gray-200">
               {filteredUsers.map((user) => (
-                <li key={user.id} className="px-6 py-4">
+                <li key={user.userId || user.email} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium text-blue-600">
-                            {user.firstName.charAt(0).toUpperCase()}{user.lastName.charAt(0).toUpperCase()}
+                            {user.firstName.charAt(0).toUpperCase()}
+                            {user.lastName.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       </div>
@@ -161,22 +183,22 @@ export const AdminUsers: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <select
                         value={user.role}
-                        onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                        onChange={(e) => handleUpdateRole(user.userId!, e.target.value)}
                         className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       >
                         {roles.map((role) => (
-                          <option key={role.id} value={role.name}>
+                          <option key={role.id || role.name} value={role.name}>
                             {role.name}
                           </option>
                         ))}
                       </select>
-                      
+
                       <button
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => handleDeleteUser(user.userId)}
                         className="inline-flex items-center p-1 border border-transparent rounded-md text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
                         title="Delete user"
                       >

@@ -6,7 +6,8 @@ import { AuthProvider } from './contexts/AuthContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider> {/* 🟢 moved here */}
+    {/* 🟢 AuthProvider bilan App ni o'rab oldik */}
+    <AuthProvider>
       <App />
     </AuthProvider>
   </StrictMode>

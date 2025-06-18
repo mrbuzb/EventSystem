@@ -8,9 +8,12 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout, isAuthenticated, isAdmin } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // isAdmin ni user rolidan aniqlaymiz
+  const isAdmin = user && (user.role === 'Admin' || user.role === 'SuperAdmin');
 
   const handleLogout = () => {
     logout();
@@ -18,13 +21,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const navItems = [
-  { to: '/', label: 'Public Events', icon: Home, show: true },
-  { to: '/events/my', label: 'My Events', icon: Calendar, show: isAuthenticated },
-  { to: '/events/guest', label: 'Guest Events', icon: Users, show: isAuthenticated },
-  { to: '/events/subscribed', label: 'Subscribed Events', icon: Calendar, show: isAuthenticated }, // ✅ Qo‘shildi
-  { to: '/admin/users', label: 'Admin Panel', icon: Shield, show: isAdmin },
-];
-
+    { to: '/', label: 'Public Events', icon: Home, show: true },
+    { to: '/events/my', label: 'My Events', icon: Calendar, show: isAuthenticated },
+    { to: '/events/guest', label: 'Guest Events', icon: Users, show: isAuthenticated },
+    { to: '/events/subscribed', label: 'Subscribed Events', icon: Calendar, show: isAuthenticated }, // ✅ Qo‘shildi
+    { to: '/admin/users', label: 'Admin Panel', icon: Shield, show: isAdmin }, // faqat adminlarga
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,7 +41,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
 
             <div className="flex items-center space-x-4">
-              {navItems.map((item) => 
+              {navItems.map((item) =>
                 item.show && (
                   <Link
                     key={item.to}
@@ -60,7 +62,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-200">
                   <div className="flex items-center space-x-2">
                     <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">{user?.firstName} {user?.lastName}</span>
+                    <span className="text-sm text-gray-700">
+                      {user?.firstName} {user?.lastName}
+                    </span>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -91,9 +95,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
-      </main>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">{children}</main>
     </div>
   );
 };

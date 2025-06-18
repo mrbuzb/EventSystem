@@ -7,12 +7,15 @@ interface PrivateRouteProps {
   requireAdmin?: boolean;
 }
 
+
+
 export const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
   children, 
   requireAdmin = false 
 }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
   const location = useLocation();
+  console.log({ isAuthenticated, isAdmin, loading });
 
   if (loading) {
     return (
